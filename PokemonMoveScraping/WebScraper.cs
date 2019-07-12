@@ -10,12 +10,12 @@ namespace PokemonMoveScraping
         static void Main(string[] args)
         {
             var nodeListOfMoveNamesAndLinks = GetNodeListOfAllMoves();
-            var totalMoveCount = GetTotalCountOfLearnedMoves(nodeListOfMoveNamesAndLinks);
+            //var totalMoveCount = GetTotalCountOfLearnedMoves(nodeListOfMoveNamesAndLinks);
 
-            Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
-                $"among all pokemon.");
-            Console.WriteLine("Press enter to continue.");
-            Console.ReadLine();
+            //Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
+            //    $"among all pokemon.");
+            //Console.WriteLine("Press enter to continue.");
+            //Console.ReadLine();
 
             var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
             foreach (var pokemon in pokemonMoveDict.Keys)
@@ -91,6 +91,7 @@ namespace PokemonMoveScraping
 
         static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl)
         {
+            movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Protect_(move)";
             var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
 
             /*
@@ -108,16 +109,26 @@ namespace PokemonMoveScraping
             {
                 foreach (var pokemonNode in tablesOfPokemonToLearnMove)
                 {
+                    Console.WriteLine(">>>" + pokemonNode.InnerText);
+                    var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText;
+                    Console.WriteLine("<<<" + pokemonName);
+                    var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText;
+
+                    if (!string.IsNullOrEmpty(pokemonSmallTextNode))
+                    {
+                        pokemonName = $"{pokemonName} ({pokemonSmallTextNode})";
+                    }
+
                     // It is possible one pokemon could be on multiple tables at once for the same move (e.g., if the
                     // pokemon can learn the move by leveling up or by HM).
-                    if (setOfPokemonToLearnMove.Contains(pokemonNode.InnerText))
+                    if (setOfPokemonToLearnMove.Contains(pokemonName))
                     {
                         continue;
                     }
-                    setOfPokemonToLearnMove.Add(pokemonNode.InnerText);
+                    setOfPokemonToLearnMove.Add(pokemonName);
                 }
             }
-            catch (NullReferenceException ignore)
+            catch (NullReferenceException)
             {
                 Console.Error.WriteLine("Move data could not be found for the move at the following page:");
                 Console.Error.WriteLine($"\t{movePageUrl}");
