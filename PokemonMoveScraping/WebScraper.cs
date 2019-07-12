@@ -14,6 +14,17 @@ namespace PokemonMoveScraping
 
             Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
                 $"among all pokemon.");
+            Console.WriteLine("Press enter to continue.");
+            Console.ReadLine();
+
+            var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
+            foreach (var pokemon in pokemonMoveDict.Keys)
+            {
+                var formattedMoveSet = string.Join(", ", pokemonMoveDict[pokemon]);
+                Console.WriteLine($"{pokemon} can learn {pokemonMoveDict[pokemon].Count} moves: " +
+                    $"{formattedMoveSet}.");
+            }
+            Console.WriteLine("Press enter to continue.");
             Console.ReadLine();
         }
 
