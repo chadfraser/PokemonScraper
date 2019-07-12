@@ -9,7 +9,7 @@ namespace PokemonMoveScraping
     {
         static void Main(string[] args)
         {
-            var nodeListOfMoveNamesAndLinks = getNodeListOfAllMoves();
+            var nodeListOfMoveNamesAndLinks = GetNodeListOfAllMoves();
             var totalMoveCount = 0;
 
             foreach (var moveNode in nodeListOfMoveNamesAndLinks)
@@ -21,7 +21,7 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                totalMoveCount += getCountOfPokemonToLearnMove(movePageUrl);
+                totalMoveCount += GetCountOfPokemonToLearnMove(movePageUrl);
             }
 
             Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
@@ -29,7 +29,7 @@ namespace PokemonMoveScraping
             Console.ReadLine();
         }
 
-        static HtmlNodeCollection getNodeListOfAllMoves()
+        static HtmlNodeCollection GetNodeListOfAllMoves()
         {
             var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
             var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
@@ -38,9 +38,10 @@ namespace PokemonMoveScraping
             return nodeListOfMoveNamesAndLinks;
         }
 
-        static int getCountOfPokemonToLearnMove(String movePageUrl)
+        static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl)
         {
             var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
+
             /*
              * Select all of the sibling tables between the h2 tag with the span of id "Learnset" (i.e., the Learnset
              * section), but before the next h2 tag (i.e., whatever the next section is).
@@ -51,18 +52,18 @@ namespace PokemonMoveScraping
             var tablesOfPokemonToLearnMove = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
                 "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
 
-            var setOfPokemonToLearnThisMove = new HashSet<string>();
+            var setOfPokemonToLearnMove = new HashSet<string>();
             try
             {
                 foreach (var pokemonNode in tablesOfPokemonToLearnMove)
                 {
                     // It is possible one pokemon could be on multiple tables at once for the same move (e.g., if the
                     // pokemon can learn the move by leveling up or by HM).
-                    if (setOfPokemonToLearnThisMove.Contains(pokemonNode.InnerText))
+                    if (setOfPokemonToLearnMove.Contains(pokemonNode.InnerText))
                     {
                         continue;
                     }
-                    setOfPokemonToLearnThisMove.Add(pokemonNode.InnerText);
+                    setOfPokemonToLearnMove.Add(pokemonNode.InnerText);
                 }
             }
             catch (NullReferenceException ignore)
@@ -76,7 +77,14 @@ namespace PokemonMoveScraping
                 Console.Error.WriteLine();
                 Console.ReadKey();
             }
-            return setOfPokemonToLearnThisMove.Count;
+
+            return setOfPokemonToLearnMove;
+        }
+
+        static int GetCountOfPokemonToLearnMove(string movePageUrl)
+        {
+            var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl);
+            return setOfPokemonToLearnMove.Count;
         }
     }
 }
