@@ -21,7 +21,7 @@ namespace PokemonMoveScraping
             //Console.ReadLine();
 
             GetSetOfPokemonToLearnSpecialTMs();
-            GetSetOfGenderlessPokemon();
+            //GetSetOfGenderlessPokemon();
 
             //var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
             //foreach (var pokemon in pokemonMoveDict.Keys)
@@ -211,7 +211,21 @@ namespace PokemonMoveScraping
                 else
                 {
                     var subsetOfPokemon = new HashSet<string>();
-                    var pokemonImages = pokemonExceptions.SelectNodes(".//img");
+                    var pokemonImages = pokemonExceptions.SelectNodes(".//img" +
+                        // images which do not have an anchor-tag parent...
+                        "[not(parent::a" +
+                            // that immediately preceeds text...
+                            "[following-sibling::node()[1]" +
+                                // containing the phrase "only in"
+                                "[contains(., 'only in')]" +
+                                "]" +
+                            ")" +
+                        "]");
+                    if (pokemonImages is null)
+                    {
+                        Console.ReadKey();
+                        continue;
+                    }
                     foreach (var image in pokemonImages)
                     {
                         var altText = image.GetAttributeValue("alt", "");
