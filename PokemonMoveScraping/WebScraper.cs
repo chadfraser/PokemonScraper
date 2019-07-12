@@ -1,6 +1,7 @@
-﻿using HtmlAgilityPack;
-using Fraser.GenericMethods;
+﻿using Fraser.GenericMethods;
+using HtmlAgilityPack;
 using System;
+using System.Collections.Generic;
 
 namespace PokemonMoveScraping
 {
@@ -9,46 +10,55 @@ namespace PokemonMoveScraping
         static void Main(string[] args)
         {
             var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
-            var doc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
-            Console.WriteLine("aaa");
-            var movesTable = doc.DocumentNode.SelectSingleNode("//table//tr//td");
+            var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
+            var movesTable = mainDoc.DocumentNode.SelectSingleNode("//table//tr//td");
             var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
+
+            var totalMoveCount = 0;
+
             foreach (var moveNode in nodeListOfMoveNamesAndLinks)
             {
-                //var moveHrefAttribute = moveNode.Attributes["href"];
-                //if (moveHrefAttribute is null)
-                //{
-                //    continue;
-                //}
-                //var movePageUrlSuffix = moveHrefAttribute.Value;
-                //var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                //var movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Water_Gun_(move)";
-                var movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Pound_(move)";
+                var moveHrefAttribute = moveNode.Attributes["href"];
+                if (moveHrefAttribute is null)
+                {
+                    continue;
+                }
+                var movePageUrlSuffix = moveHrefAttribute.Value;
+                var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
 
-                var newPageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
-                var learnTables = newPageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
-                    "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
-                //var learnTables = newPageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
-                //  "following-sibling::table/tr/td[3]");
-                foreach (var pokemonNode in learnTables)
+                var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
+                totalMoveCount += getCountOfPokemonToLearnMove(movePageDoc);
+            }
+
+            Console.WriteLine(totalMoveCount);
+            Console.ReadLine();
+        }
+
+        static int getCountOfPokemonToLearnMove(HtmlDocument movePageDoc)
+        {
+            /*
+             * Select all of the sibling tables between the h2 tag with the span of id "Learnset" (i.e., the Learnset
+             * section), but before the next h2 tag (i.e., whatever the next section is).
+             * This ensures we only get tables in the Learnset section of the wiki page, which is where the only relevant
+             * tables are.
+             * This may included tables titled "by leveling up", "by HM", "by event", etc.
+             */
+            var learnTables = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
+                "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
+
+            var setOfPokemonToLearnThisMove = new HashSet<string>();
+            var countOfPokemonToLearnThisMove = 0; 
+            foreach (var pokemonNode in learnTables)
+            {
+                if (setOfPokemonToLearnThisMove.Contains(pokemonNode.InnerText))
                 {
                     Console.WriteLine(pokemonNode.InnerText);
-                    Console.ReadLine();
+                    continue;
                 }
+                setOfPokemonToLearnThisMove.Add(pokemonNode.InnerText);
+                countOfPokemonToLearnThisMove++;
             }
-            Console.ReadLine();
-            //aaa = doc.DocumentNode.SelectNodes("//table");
-            //Console.WriteLine(aaa);
-            //Console.WriteLine("   -------     ");
-            //aaa = doc.DocumentNode.SelectNodes("//table/tbody");
-            //Console.WriteLine(aaa);
-            //Console.WriteLine("   -------     ");
-            //aaa = doc.DocumentNode.SelectNodes("//table/tbody/tr");
-            //Console.WriteLine(aaa);
-            //Console.WriteLine("   -------     ");
-            //aaa = doc.DocumentNode.SelectNodes("//table/tbody/tr/td[2]");
-            //Console.WriteLine(aaa);
-                //GetElementbyId("List_of_moves");
+            return countOfPokemonToLearnThisMove;
         }
     }
 }
