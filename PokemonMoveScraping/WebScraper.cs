@@ -20,8 +20,7 @@ namespace PokemonMoveScraping
             //Console.WriteLine("Press enter to continue.");
             //Console.ReadLine();
 
-            GetSetOfPokemonToLearnSpecialTMs();
-            //GetSetOfGenderlessPokemon();
+             IncompatibleTM.GetDictOfGeneralTMsAndIncompatiblePokemon();
 
             //var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
             //foreach (var pokemon in pokemonMoveDict.Keys)
@@ -176,122 +175,6 @@ namespace PokemonMoveScraping
         {
             var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
             return setOfPokemonToLearnMove.Count;
-        }
-
-        static Dictionary<string, HashSet<string>> GetSetOfPokemonToLearnSpecialTMs()
-        {
-            var setOfGenderlessPokemon = GetSetOfGenderlessPokemon();
-
-            var tmDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/TM");
-            var tableOfIncompatiblePokemon = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
-                "[starts-with(@id, 'Incompatible_Pok')]]/following-sibling::table//table");
-            var setOfPokemonThatCannotLearnTMs = new HashSet<string>();
-
-            var dataRowsInTableOfIncompatiblePokemon = tableOfIncompatiblePokemon.SelectNodes(".//tr[td]");
-            var dictOfExceptionsToExceptions = new Dictionary<string, HashSet<string>>();
-
-            foreach (var tableRow in dataRowsInTableOfIncompatiblePokemon)
-            {
-                var pokemonName = tableRow.SelectSingleNode("./td[3]").InnerText.Trim();
-                var compatibleTMLinks = tableRow.SelectNodes("./td[position()>last()-2]/a");
-                setOfPokemonThatCannotLearnTMs.Add(pokemonName);
-                if (compatibleTMLinks is null)
-                {
-                    continue;
-                }
-                foreach (var link in compatibleTMLinks) {
-                    var moveName = link.InnerText.Trim();
-                    Console.WriteLine(pokemonName + " " + moveName);
-                    if (dictOfExceptionsToExceptions.ContainsKey(pokemonName))
-                    {
-                        dictOfExceptionsToExceptions[pokemonName].Add(moveName);
-                    }
-                    else
-                    {
-                        dictOfExceptionsToExceptions[pokemonName] = new HashSet<string> { moveName };
-                    }
-                }
-            }
-
-            var tableOfNotableTMs = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
-                "[@id='Near-universal_TMs']]/following-sibling::table//table");
-
-            var dictOfTMExceptions = new Dictionary<string, HashSet<string>>();
-            var dataRowsInTableOfNotableTMs = tableOfNotableTMs.SelectNodes(".//tr[td]");
-            foreach (var tableRow in dataRowsInTableOfNotableTMs)
-            {
-                var nameOfTM = tableRow.SelectSingleNode("./td[1]").InnerText.Trim();
-                var pokemonExceptions = tableRow.SelectSingleNode("./td[10]");
-                var pokemonExceptionsText = pokemonExceptions.InnerText.Trim();
-
-                if (pokemonExceptionsText == "None")
-                {
-                    dictOfTMExceptions[nameOfTM] = setOfPokemonThatCannotLearnTMs;
-                }
-                else
-                {
-                    var pokemonImages = pokemonExceptions.SelectNodes(".//img" +
-                        // images which do not have an anchor-tag parent...
-                        "[not(parent::a" +
-                            // that immediately preceeds text...
-                            "[following-sibling::node()[1]" +
-                                // containing the phrase "only in"
-                                "[contains(., 'only in')]" +
-                                "]" +
-                            ")" +
-                        "]");
-                    if (pokemonImages is null)
-                    {
-                        // add error check here?
-                        dictOfTMExceptions[nameOfTM] = setOfPokemonThatCannotLearnTMs;
-                        continue;
-                    }
-                    var additionalPokemonExceptions = new HashSet<string>(setOfPokemonThatCannotLearnTMs);
-                    if (pokemonExceptions.InnerText.Contains("and all genderless"))
-                    {
-                        additionalPokemonExceptions.UnionWith(setOfGenderlessPokemon);
-                        if (pokemonExceptions.InnerText.Contains("except"))
-                        {
-                            var genderlessPokemonExceptionNodes = pokemonExceptions.SelectNodes(".//text()" +
-                                "[contains(., 'except')]//following-sibling::a");
-                            foreach (var genderlessPokemon in genderlessPokemonExceptionNodes)
-                            {
-                                additionalPokemonExceptions.Remove(genderlessPokemon.InnerText.Trim());
-                            }
-                        }
-                    }
-
-                    foreach (var image in pokemonImages)
-                    {
-                        var altText = image.GetAttributeValue("alt", "");
-                        additionalPokemonExceptions.Add(altText);
-                    }
-                    dictOfTMExceptions[nameOfTM] = additionalPokemonExceptions;
-                }
-            }
-
-            return dictOfTMExceptions;
-        }
-
-        static HashSet<string> GetSetOfGenderlessPokemon()
-        {
-            var genderlessDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/" +
-                "Gender_unknown_(Egg_Group)");
-            var tablesOfGenderlessPokemon = genderlessDoc.DocumentNode.SelectNodes("//h2[span" +
-                "[text()='Pokémon']]/following-sibling::table//table[tr[1]/th[contains(., 'Pokémon')]]");
-            var setOfGenderlessPokemon = new HashSet<string>();
-
-            foreach (var table in tablesOfGenderlessPokemon)
-            {
-                var pokemonInTable = table.SelectNodes(".//tr/td[3]");
-                foreach (var pokemon in pokemonInTable)
-                {
-                    setOfGenderlessPokemon.Add(pokemon.InnerText.Trim());
-                    //Console.WriteLine(pokemon.InnerText.Trim());
-                }
-            }
-
-            return setOfGenderlessPokemon;
         }
     }
 }
