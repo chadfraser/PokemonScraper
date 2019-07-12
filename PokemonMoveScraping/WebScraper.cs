@@ -91,7 +91,8 @@ namespace PokemonMoveScraping
 
         static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl)
         {
-            movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Protect_(move)";
+            movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Struggle_(move)";
+            //movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Water_Gun_(move)";
             var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
 
             /*
@@ -102,14 +103,30 @@ namespace PokemonMoveScraping
              * This may included tables titled "by leveling up", "by HM", "by event", etc.
              */
             var tablesOfPokemonToLearnMove = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
-                "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
+                "following-sibling::h2[1]/preceding-sibling::table[@class='roundy'][tr/td[3]]");
 
             var setOfPokemonToLearnMove = new HashSet<string>();
+            if (tablesOfPokemonToLearnMove is null)
+            {
+                Console.WriteLine("Sorry.");
+            }
+            else
+            {
+                Console.WriteLine(tablesOfPokemonToLearnMove.Count);
+                foreach (var table in tablesOfPokemonToLearnMove)
+                {
+                    var aa = table.SelectNodes("./tr/td[3]");
+                    Console.WriteLine(aa.Count);
+                }
+            }
+            Console.ReadLine();
+
             try
             {
                 foreach (var pokemonNode in tablesOfPokemonToLearnMove)
                 {
                     Console.WriteLine(">>>" + pokemonNode.InnerText);
+                    //Console.WriteLine("\n\n\n");
                     var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText;
                     Console.WriteLine("<<<" + pokemonName);
                     var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText;
@@ -126,6 +143,7 @@ namespace PokemonMoveScraping
                         continue;
                     }
                     setOfPokemonToLearnMove.Add(pokemonName);
+                    Console.ReadLine();
                 }
             }
             catch (NullReferenceException)
