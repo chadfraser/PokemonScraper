@@ -2,15 +2,16 @@
 using Fraser.GenericMethods;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PokemonMoveScraping
 {
     class IncompatibleTM
     {
-        public static Dictionary<string, HashSet<string>> GetSetOfPokemonToLearnGeneralTMs()
+        public static Dictionary<string, HashSet<string>> GetDictOfGeneralTMsAndIncompatiblePokemon()
         {
             var setOfPokemonThatCannotLearnGeneralTMs = new HashSet<string>();
-            var dictOfPokemonAndCompatibleTMs = new Dictionary<string, HashSet<string>>();
+            var dictOfTMsAndPokemonExceptions = new Dictionary<string, HashSet<string>>();
 
             var tmDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/TM");
 
@@ -20,7 +21,7 @@ namespace PokemonMoveScraping
             var tableOfPokemonThatCannotLearnGeneralTMs = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
                 "[starts-with(@id, 'Incompatible_Pok')]]/following-sibling::table//table");
 
-            FillSetOfPokemonAndDictOfExceptions(dictOfPokemonAndCompatibleTMs, setOfPokemonThatCannotLearnGeneralTMs,
+            FillSetOfPokemonAndDictOfExceptions(dictOfTMsAndPokemonExceptions, setOfPokemonThatCannotLearnGeneralTMs,
                 tableOfPokemonThatCannotLearnGeneralTMs);
 
             var tableOfGeneralTMs = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
@@ -30,10 +31,20 @@ namespace PokemonMoveScraping
             FillDictOfGeneralTMsAndIncompatiblePokemon(dictOfGeneralTMsAndIncompatiblePokemon,
                 setOfPokemonThatCannotLearnGeneralTMs, tableOfGeneralTMs);
 
+            foreach (var move in dictOfTMsAndPokemonExceptions.Keys)
+            {
+                if (!dictOfGeneralTMsAndIncompatiblePokemon.ContainsKey(move))
+                {
+                    continue;
+                }
+                dictOfGeneralTMsAndIncompatiblePokemon[move] = dictOfGeneralTMsAndIncompatiblePokemon[move].Except(
+                    dictOfTMsAndPokemonExceptions[move]).ToHashSet();
+            }
+
             return dictOfGeneralTMsAndIncompatiblePokemon;
         }
 
-        static void FillSetOfPokemonAndDictOfExceptions(Dictionary<string, HashSet<string>> dictOfPokemonAndCompatibleTMs,
+        static void FillSetOfPokemonAndDictOfExceptions(Dictionary<string, HashSet<string>> dictOfTMsAndPokemonExceptions,
             HashSet<string> setOfPokemonThatCannotLearnGeneralTMs,
             HtmlNode tableOfPokemonThatCannotLearnGeneralTMs)
         {
@@ -57,7 +68,7 @@ namespace PokemonMoveScraping
                 foreach (var link in compatibleTMLinks)
                 {
                     var moveName = link.InnerText.Trim();
-                    AddDefaultSetValueToDict(dictOfPokemonAndCompatibleTMs, pokemonName, moveName);
+                    AddDefaultSetValueToDict(dictOfTMsAndPokemonExceptions, moveName, pokemonName);
                 }
             }
         }

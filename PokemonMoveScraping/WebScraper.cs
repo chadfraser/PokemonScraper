@@ -20,9 +20,13 @@ namespace PokemonMoveScraping
             //Console.WriteLine("Press enter to continue.");
             //Console.ReadLine();
 
-             IncompatibleTM.GetDictOfGeneralTMsAndIncompatiblePokemon();
+            var a = IncompatibleTM.GetDictOfGeneralTMsAndIncompatiblePokemon();
+            foreach (var b in a.Keys)
+            {
+                Console.WriteLine($"{b}: {string.Join(", ", a[b])}");
+            }
 
-            //var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
+            var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
             //foreach (var pokemon in pokemonMoveDict.Keys)
             //{
             //    var formattedMoveSet = string.Join(", ", pokemonMoveDict[pokemon]);
@@ -149,6 +153,7 @@ namespace PokemonMoveScraping
             if (tablesOfPokemonToLearnMove is null)
             {
                 Console.WriteLine($"No learnset tables were found for the move '{moveName}'.");
+                Console.ReadLine();
             }
             else
             {
