@@ -1,0 +1,11 @@
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\bin\Debug\netcoreapp2.2\PokemonMoveScraping.deps.json
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\bin\Debug\netcoreapp2.2\PokemonMoveScraping.runtimeconfig.json
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\bin\Debug\netcoreapp2.2\PokemonMoveScraping.runtimeconfig.dev.json
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\bin\Debug\netcoreapp2.2\PokemonMoveScraping.dll
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.csprojAssemblyReference.cache
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.csproj.CoreCompileInputs.cache
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.AssemblyInfoInputs.cache
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.AssemblyInfo.cs
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\bin\Debug\netcoreapp2.2\PokemonMoveScraping.pdb
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.dll
+C:\Users\Chad\Desktop\C#\PokemonMoveScraping\PokemonMoveScraping\obj\Debug\netcoreapp2.2\PokemonMoveScraping.pdb
