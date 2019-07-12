@@ -9,11 +9,7 @@ namespace PokemonMoveScraping
     {
         static void Main(string[] args)
         {
-            var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
-            var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
-            var movesTable = mainDoc.DocumentNode.SelectSingleNode("//table//tr//td");
-            var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
-
+            var nodeListOfMoveNamesAndLinks = getNodeListOfAllMoves();
             var totalMoveCount = 0;
 
             foreach (var moveNode in nodeListOfMoveNamesAndLinks)
@@ -26,13 +22,20 @@ namespace PokemonMoveScraping
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
                 totalMoveCount += getCountOfPokemonToLearnMove(movePageUrl);
-
-                //var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
-                //totalMoveCount += getCountOfPokemonToLearnMove(movePageDoc);
             }
 
-            Console.WriteLine(totalMoveCount);
+            Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
+                $"among all pokemon.");
             Console.ReadLine();
+        }
+
+        static HtmlNodeCollection getNodeListOfAllMoves()
+        {
+            var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
+            var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
+            var movesTable = mainDoc.DocumentNode.SelectSingleNode("//table//tr//td");
+            var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
+            return nodeListOfMoveNamesAndLinks;
         }
 
         static int getCountOfPokemonToLearnMove(String movePageUrl)
