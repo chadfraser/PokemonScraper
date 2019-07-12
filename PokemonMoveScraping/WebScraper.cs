@@ -183,16 +183,55 @@ namespace PokemonMoveScraping
             var tmDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/TM");
             var tableOfIncompatiblePokemon = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
                 "[starts-with(@id, 'Incompatible_Pok')]]/following-sibling::table//table");
-            var setOfPokemonToLearnTMs = new HashSet<string>();
+            var setOfPokemonThatCannotLearnTMs = new HashSet<string>();
 
             var pokemonInTable = tableOfIncompatiblePokemon.SelectNodes(".//tr/td[3]");
             foreach (var pokemon in pokemonInTable)
             {
-                setOfPokemonToLearnTMs.Add(pokemon.InnerText.Trim());
+                setOfPokemonThatCannotLearnTMs.Add(pokemon.InnerText.Trim());
                 Console.WriteLine(pokemon.InnerText.Trim());
             }
 
-            return setOfPokemonToLearnTMs;
+            var tableOfNotableTMs = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
+                "[@id='Near-universal_TMs']]/following-sibling::table//table");
+
+            var dictOfTMExceptions = new Dictionary<string, HashSet<string>>();
+            var dataRowsInTableOfNotableTMs = tableOfNotableTMs.SelectNodes(".//tr[td]");
+            foreach (var tableRow in dataRowsInTableOfNotableTMs)
+            {
+                var nameOfTM = tableRow.SelectSingleNode("./td[1]").InnerText.Trim();
+                Console.WriteLine(nameOfTM);
+                var pokemonExceptions = tableRow.SelectSingleNode("./td[10]");
+                var pokemonExceptionsText = pokemonExceptions.InnerText.Trim();
+
+                if (pokemonExceptionsText == "None")
+                {
+                    dictOfTMExceptions[nameOfTM] = setOfPokemonThatCannotLearnTMs;
+                }
+                else
+                {
+                    var subsetOfPokemon = new HashSet<string>();
+                    var pokemonImages = pokemonExceptions.SelectNodes(".//img");
+                    foreach (var image in pokemonImages)
+                    {
+                        var altText = image.GetAttributeValue("alt", "");
+                        Console.WriteLine(">>" + altText);
+                        subsetOfPokemon.Add(altText);
+                    }
+                }
+                // for each img link, alt text of image
+                    // unless image is followed by text "(only in XY)"
+                // if is "None", good
+                // if contains "all genderless Poke'mon", send the InnerHtml from "(except" to end of InnerHtml,
+                    // and remove the InnerText from all a tags in this InnerHtml
+                //Console.WriteLine();
+
+                //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.Add(pokemon.InnerText.Trim());
+                //Console.WriteLine(pokemon.InnerText.Trim());
+            }
+
+
+            return setOfPokemonThatCannotLearnTMs;
         }
 
         static HashSet<string> GetSetOfGenderlessPokemon()
