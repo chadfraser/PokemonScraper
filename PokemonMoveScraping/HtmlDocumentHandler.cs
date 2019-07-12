@@ -26,7 +26,7 @@ namespace Fraser.GenericMethods
                 WriteErrorMessage(url);
                 doc = null;
             }
-            System.Threading.Thread.Sleep(2000);
+            System.Threading.Thread.Sleep(500);
             return doc;
         }
 

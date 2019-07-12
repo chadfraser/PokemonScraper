@@ -15,15 +15,26 @@ namespace PokemonMoveScraping
             var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
             foreach (var moveNode in nodeListOfMoveNamesAndLinks)
             {
-                var moveHrefAttribute = moveNode.Attributes["href"];
-                if (moveHrefAttribute is null)
+                //var moveHrefAttribute = moveNode.Attributes["href"];
+                //if (moveHrefAttribute is null)
+                //{
+                //    continue;
+                //}
+                //var movePageUrlSuffix = moveHrefAttribute.Value;
+                //var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
+                //var movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Water_Gun_(move)";
+                var movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Pound_(move)";
+
+                var newPageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
+                var learnTables = newPageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
+                    "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
+                //var learnTables = newPageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
+                //  "following-sibling::table/tr/td[3]");
+                foreach (var pokemonNode in learnTables)
                 {
-                    continue;
+                    Console.WriteLine(pokemonNode.InnerText);
+                    Console.ReadLine();
                 }
-                var movePageUrlSuffix = moveHrefAttribute.Value;
-                var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-
-
             }
             Console.ReadLine();
             //aaa = doc.DocumentNode.SelectNodes("//table");
