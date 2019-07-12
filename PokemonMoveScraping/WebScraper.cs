@@ -20,15 +20,18 @@ namespace PokemonMoveScraping
             //Console.WriteLine("Press enter to continue.");
             //Console.ReadLine();
 
-            var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
-            foreach (var pokemon in pokemonMoveDict.Keys)
-            {
-                var formattedMoveSet = string.Join(", ", pokemonMoveDict[pokemon]);
-                Console.WriteLine($"{pokemon} can learn {pokemonMoveDict[pokemon].Count} moves: " +
-                    $"{formattedMoveSet}.");
-            }
-            Console.WriteLine("Press enter to continue.");
-            Console.ReadLine();
+            GetSetOfPokemonToLearnSpecialTMs();
+            GetSetOfGenderlessPokemon();
+
+            //var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
+            //foreach (var pokemon in pokemonMoveDict.Keys)
+            //{
+            //    var formattedMoveSet = string.Join(", ", pokemonMoveDict[pokemon]);
+            //    Console.WriteLine($"{pokemon} can learn {pokemonMoveDict[pokemon].Count} moves: " +
+            //        $"{formattedMoveSet}.");
+            //}
+            //Console.WriteLine("Press enter to continue.");
+            //Console.ReadLine();
         }
 
         static HtmlNodeCollection GetNodeListOfAllMoves()
@@ -53,7 +56,7 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                var moveName = moveNode.InnerText;
+                var moveName = moveNode.InnerText.Trim();
                 totalMoveCount += GetCountOfPokemonToLearnMove(movePageUrl, moveName);
             }
 
@@ -74,7 +77,7 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                var moveName = moveNode.InnerText;
+                var moveName = moveNode.InnerText.Trim();
                 var pokemonMoveSet = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
 
                 foreach (var pokemon in pokemonMoveSet)
@@ -96,7 +99,7 @@ namespace PokemonMoveScraping
         static void GetDistinctPokemonFromTable(HtmlNode tableNode, HashSet<string> setOfPokemonToLearnMove, string moveName)
         {
             var nodesOfPokemonToLearnMove = tableNode.SelectNodes("./tr/td[3]");
-            //Console.WriteLine(nodesOfPokemonToLearnMove.Count + " " + moveName);
+
             if (nodesOfPokemonToLearnMove is null)
             {
                 var tableContentText = tableNode.SelectSingleNode(".//tr[3]").InnerText.Trim();
@@ -110,11 +113,8 @@ namespace PokemonMoveScraping
 
             foreach (var pokemonNode in nodesOfPokemonToLearnMove)
             {
-                //Console.WriteLine(">>>" + pokemonNode.InnerText);
-                ////Console.WriteLine("\n\n\n");
-                var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText;
-                //Console.WriteLine("<<<" + pokemonName);
-                var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText;
+                var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText.Trim();
+                var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText.Trim();
 
                 if (!string.IsNullOrEmpty(pokemonSmallTextNode) && distinguishSubtypes)
                 {
@@ -153,7 +153,6 @@ namespace PokemonMoveScraping
             }
             else
             {
-                //Console.WriteLine(tablesOfPokemonToLearnMove.Count);
                 foreach (var tableNode in tablesOfPokemonToLearnMove)
                 {
                     GetDistinctPokemonFromTable(tableNode, setOfPokemonToLearnMove, moveName);
@@ -177,6 +176,44 @@ namespace PokemonMoveScraping
         {
             var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
             return setOfPokemonToLearnMove.Count;
+        }
+
+        static HashSet<string> GetSetOfPokemonToLearnSpecialTMs()
+        {
+            var tmDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/TM");
+            var tableOfIncompatiblePokemon = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
+                "[starts-with(@id, 'Incompatible_Pok')]]/following-sibling::table//table");
+            var setOfPokemonToLearnTMs = new HashSet<string>();
+
+            var pokemonInTable = tableOfIncompatiblePokemon.SelectNodes(".//tr/td[3]");
+            foreach (var pokemon in pokemonInTable)
+            {
+                setOfPokemonToLearnTMs.Add(pokemon.InnerText.Trim());
+                Console.WriteLine(pokemon.InnerText.Trim());
+            }
+
+            return setOfPokemonToLearnTMs;
+        }
+
+        static HashSet<string> GetSetOfGenderlessPokemon()
+        {
+            var genderlessDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/" +
+                "Gender_unknown_(Egg_Group)");
+            var tablesOfGenderlessPokemon = genderlessDoc.DocumentNode.SelectNodes("//h2[span" +
+                "[text()='Pokémon']]/following-sibling::table//table[tr[1]/th[contains(., 'Pokémon')]]");
+            var setOfGenderlessPokemon = new HashSet<string>();
+
+            foreach (var table in tablesOfGenderlessPokemon)
+            {
+                var pokemonInTable = table.SelectNodes(".//tr/td[3]");
+                foreach (var pokemon in pokemonInTable)
+                {
+                    setOfGenderlessPokemon.Add(pokemon.InnerText.Trim());
+                    Console.WriteLine(pokemon.InnerText.Trim());
+                }
+            }
+
+            return setOfGenderlessPokemon;
         }
     }
 }
