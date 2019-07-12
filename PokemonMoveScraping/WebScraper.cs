@@ -180,6 +180,8 @@ namespace PokemonMoveScraping
 
         static HashSet<string> GetSetOfPokemonToLearnSpecialTMs()
         {
+            var setOfGenderlessPokemon = GetSetOfGenderlessPokemon();
+
             var tmDoc = HtmlDocumentHandler.GetDocumentOrNullIfError("https://bulbapedia.bulbagarden.net/wiki/TM");
             var tableOfIncompatiblePokemon = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
                 "[starts-with(@id, 'Incompatible_Pok')]]/following-sibling::table//table");
@@ -189,7 +191,7 @@ namespace PokemonMoveScraping
             foreach (var pokemon in pokemonInTable)
             {
                 setOfPokemonThatCannotLearnTMs.Add(pokemon.InnerText.Trim());
-                Console.WriteLine(pokemon.InnerText.Trim());
+                //Console.WriteLine(pokemon.InnerText.Trim());
             }
 
             var tableOfNotableTMs = tmDoc.DocumentNode.SelectSingleNode("//h2[span" +
@@ -200,7 +202,7 @@ namespace PokemonMoveScraping
             foreach (var tableRow in dataRowsInTableOfNotableTMs)
             {
                 var nameOfTM = tableRow.SelectSingleNode("./td[1]").InnerText.Trim();
-                Console.WriteLine(nameOfTM);
+                //Console.WriteLine(nameOfTM);
                 var pokemonExceptions = tableRow.SelectSingleNode("./td[10]");
                 var pokemonExceptionsText = pokemonExceptions.InnerText.Trim();
 
@@ -210,7 +212,6 @@ namespace PokemonMoveScraping
                 }
                 else
                 {
-                    var subsetOfPokemon = new HashSet<string>();
                     var pokemonImages = pokemonExceptions.SelectNodes(".//img" +
                         // images which do not have an anchor-tag parent...
                         "[not(parent::a" +
@@ -223,14 +224,41 @@ namespace PokemonMoveScraping
                         "]");
                     if (pokemonImages is null)
                     {
-                        Console.ReadKey();
+                        // add error check here?
+                        dictOfTMExceptions[nameOfTM] = setOfPokemonThatCannotLearnTMs;
                         continue;
                     }
+                    var additionalPokemonExceptions = new HashSet<string>(setOfPokemonThatCannotLearnTMs);
+                    if (pokemonExceptions.InnerText.Contains("and all genderless"))
+                    {
+                        foreach (var pokemon in setOfGenderlessPokemon)
+                        {
+                            additionalPokemonExceptions.Add(pokemon);
+                        }
+                        if (pokemonExceptions.InnerText.Contains("except"))
+                        {
+                            var g = pokemonExceptions.SelectNodes(".//text()[contains(., 'except')]//following-sibling::a");
+                            //var genderlessPokemonExceptionHtml = pokemonExceptions.InnerHtml;
+                            //var genderlessPokemonExceptionHtmlSuffix = genderlessPokemonExceptionHtml.Substring(
+                            //    genderlessPokemonExceptionHtml.IndexOf("except"));
+                            foreach (var a in g)
+                            {
+                                Console.WriteLine(a.InnerHtml);
+                            }
+
+                            //foreach (var genderlessPokemon in genderlessPokemonExceptionHtml)
+                            //{
+
+                            //}
+                            Console.ReadKey();
+                        }
+                    }
+
                     foreach (var image in pokemonImages)
                     {
                         var altText = image.GetAttributeValue("alt", "");
-                        Console.WriteLine(">>" + altText);
-                        subsetOfPokemon.Add(altText);
+                        //Console.WriteLine(">>" + altText);
+                        additionalPokemonExceptions.Add(altText);
                     }
                 }
                 // for each img link, alt text of image
