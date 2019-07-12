@@ -25,17 +25,19 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
+                totalMoveCount += getCountOfPokemonToLearnMove(movePageUrl);
 
-                var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
-                totalMoveCount += getCountOfPokemonToLearnMove(movePageDoc);
+                //var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
+                //totalMoveCount += getCountOfPokemonToLearnMove(movePageDoc);
             }
 
             Console.WriteLine(totalMoveCount);
             Console.ReadLine();
         }
 
-        static int getCountOfPokemonToLearnMove(HtmlDocument movePageDoc)
+        static int getCountOfPokemonToLearnMove(String movePageUrl)
         {
+            var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
             /*
              * Select all of the sibling tables between the h2 tag with the span of id "Learnset" (i.e., the Learnset
              * section), but before the next h2 tag (i.e., whatever the next section is).
@@ -43,30 +45,35 @@ namespace PokemonMoveScraping
              * tables are.
              * This may included tables titled "by leveling up", "by HM", "by event", etc.
              */
-            var learnTables = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
+            var tablesOfPokemonToLearnMove = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
                 "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
 
             var setOfPokemonToLearnThisMove = new HashSet<string>();
-            var countOfPokemonToLearnThisMove = 0;
             try
             {
-                foreach (var pokemonNode in learnTables)
+                foreach (var pokemonNode in tablesOfPokemonToLearnMove)
                 {
+                    // It is possible one pokemon could be on multiple tables at once for the same move (e.g., if the
+                    // pokemon can learn the move by leveling up or by HM).
                     if (setOfPokemonToLearnThisMove.Contains(pokemonNode.InnerText))
                     {
-                        //Console.WriteLine(pokemonNode.InnerText);
                         continue;
                     }
                     setOfPokemonToLearnThisMove.Add(pokemonNode.InnerText);
-                    countOfPokemonToLearnThisMove++;
                 }
             }
-            catch (NullReferenceException e)
+            catch (NullReferenceException ignore)
             {
-                Console.WriteLine(movePageDoc.DocumentNode.SelectSingleNode("/html/head/title").OuterHtml);
+                Console.Error.WriteLine("Move data could not be found for the move at the following page:");
+                Console.Error.WriteLine($"\t{movePageUrl}");
+                Console.Error.WriteLine("If the move does not normally have any set pokemon that can learn it (Such " +
+                    "as Struggle or Breakneck Blitz) or is a Z-move (such as Catastropika), this is not an error, as " +
+                    "those moves are intentionally ignored. Otherwise, you may wish to take note of this.");
+                Console.Error.WriteLine();
+                Console.Error.WriteLine();
                 Console.ReadKey();
             }
-            return countOfPokemonToLearnThisMove;
+            return setOfPokemonToLearnThisMove.Count;
         }
     }
 }
