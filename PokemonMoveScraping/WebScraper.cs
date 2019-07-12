@@ -2,11 +2,14 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace PokemonMoveScraping
 {
     class Program
     {
+        static bool distinguishSubtypes = true;
+
         static void Main(string[] args)
         {
             var nodeListOfMoveNamesAndLinks = GetNodeListOfAllMoves();
@@ -50,7 +53,8 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                totalMoveCount += GetCountOfPokemonToLearnMove(movePageUrl);
+                var moveName = moveNode.InnerText;
+                totalMoveCount += GetCountOfPokemonToLearnMove(movePageUrl, moveName);
             }
 
             return totalMoveCount;
@@ -70,8 +74,8 @@ namespace PokemonMoveScraping
                 }
                 var movePageUrlSuffix = moveHrefAttribute.Value;
                 var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
-                var pokemonMoveSet = GetSetOfPokemonToLearnMove(movePageUrl);
                 var moveName = moveNode.InnerText;
+                var pokemonMoveSet = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
 
                 foreach (var pokemon in pokemonMoveSet)
                 {
@@ -89,10 +93,46 @@ namespace PokemonMoveScraping
             return pokemonAndMoves;
         }
 
-        static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl)
+        static void GetDistinctPokemonFromTable(HtmlNode tableNode, HashSet<string> setOfPokemonToLearnMove, string moveName)
         {
-            movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Struggle_(move)";
-            //movePageUrl = "https://bulbapedia.bulbagarden.net/wiki/Water_Gun_(move)";
+            var nodesOfPokemonToLearnMove = tableNode.SelectNodes("./tr/td[3]");
+            //Console.WriteLine(nodesOfPokemonToLearnMove.Count + " " + moveName);
+            if (nodesOfPokemonToLearnMove is null)
+            {
+                var tableContentText = tableNode.SelectSingleNode(".//tr[3]").InnerText.Trim();
+                tableContentText = WebUtility.HtmlDecode(tableContentText);
+
+                Console.Error.WriteLine($"A learnset table for the move '{moveName}' had no pokemon stored in it.");
+                Console.Error.WriteLine($"\t'{tableContentText}'");
+                Console.Error.WriteLine();
+                return;
+            }
+
+            foreach (var pokemonNode in nodesOfPokemonToLearnMove)
+            {
+                //Console.WriteLine(">>>" + pokemonNode.InnerText);
+                ////Console.WriteLine("\n\n\n");
+                var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText;
+                //Console.WriteLine("<<<" + pokemonName);
+                var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText;
+
+                if (!string.IsNullOrEmpty(pokemonSmallTextNode) && distinguishSubtypes)
+                {
+                    pokemonName = $"{pokemonName} ({pokemonSmallTextNode})";
+                }
+
+                // It is possible one pokemon could be on multiple tables at once for the same move (e.g., if the
+                // pokemon can learn the move by leveling up or by HM).
+                if (setOfPokemonToLearnMove.Contains(pokemonName))
+                {
+                    continue;
+                }
+                setOfPokemonToLearnMove.Add(pokemonName);
+            }
+        }
+
+        static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl, string moveName)
+        {
             var movePageDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(movePageUrl);
 
             /*
@@ -103,66 +143,39 @@ namespace PokemonMoveScraping
              * This may included tables titled "by leveling up", "by HM", "by event", etc.
              */
             var tablesOfPokemonToLearnMove = movePageDoc.DocumentNode.SelectNodes("//h2[span[@id='Learnset']]/" +
-                "following-sibling::h2[1]/preceding-sibling::table[@class='roundy'][tr/td[3]]");
+                "following-sibling::h2[1]/preceding-sibling::table[@class='roundy'][tr[1]/th[contains(., 'Pokémon')]]");
 
             var setOfPokemonToLearnMove = new HashSet<string>();
+
             if (tablesOfPokemonToLearnMove is null)
             {
-                Console.WriteLine("Sorry.");
+                Console.WriteLine($"No learnset tables were found for the move '{moveName}'.");
             }
             else
             {
-                Console.WriteLine(tablesOfPokemonToLearnMove.Count);
-                foreach (var table in tablesOfPokemonToLearnMove)
+                //Console.WriteLine(tablesOfPokemonToLearnMove.Count);
+                foreach (var tableNode in tablesOfPokemonToLearnMove)
                 {
-                    var aa = table.SelectNodes("./tr/td[3]");
-                    Console.WriteLine(aa.Count);
+                    GetDistinctPokemonFromTable(tableNode, setOfPokemonToLearnMove, moveName);
                 }
             }
-            Console.ReadLine();
-
-            try
-            {
-                foreach (var pokemonNode in tablesOfPokemonToLearnMove)
-                {
-                    Console.WriteLine(">>>" + pokemonNode.InnerText);
-                    //Console.WriteLine("\n\n\n");
-                    var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText;
-                    Console.WriteLine("<<<" + pokemonName);
-                    var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText;
-
-                    if (!string.IsNullOrEmpty(pokemonSmallTextNode))
-                    {
-                        pokemonName = $"{pokemonName} ({pokemonSmallTextNode})";
-                    }
-
-                    // It is possible one pokemon could be on multiple tables at once for the same move (e.g., if the
-                    // pokemon can learn the move by leveling up or by HM).
-                    if (setOfPokemonToLearnMove.Contains(pokemonName))
-                    {
-                        continue;
-                    }
-                    setOfPokemonToLearnMove.Add(pokemonName);
-                    Console.ReadLine();
-                }
-            }
-            catch (NullReferenceException)
-            {
-                Console.Error.WriteLine("Move data could not be found for the move at the following page:");
-                Console.Error.WriteLine($"\t{movePageUrl}");
-                Console.Error.WriteLine("If the move does not normally have any set pokemon that can learn it (Such " +
-                    "as Struggle or Breakneck Blitz) or is a Z-move (such as Catastropika), this is not an error, as " +
-                    "those moves are intentionally ignored. Otherwise, you may wish to take note of this.");
-                Console.Error.WriteLine();
-                Console.Error.WriteLine();
-            }
+            //catch (NullReferenceException)
+            //{
+            //    Console.Error.WriteLine("Move data could not be found for the move at the following page:");
+            //    Console.Error.WriteLine($"\t{movePageUrl}");
+            //    Console.Error.WriteLine("If the move does not normally have any set pokemon that can learn it (Such " +
+            //        "as Struggle or Breakneck Blitz) or is a Z-move (such as Catastropika), this is not an error, as " +
+            //        "those moves are intentionally ignored. Otherwise, you may wish to take note of this.");
+            //    Console.Error.WriteLine();
+            //    Console.Error.WriteLine();
+            //}
 
             return setOfPokemonToLearnMove;
         }
 
-        static int GetCountOfPokemonToLearnMove(string movePageUrl)
+        static int GetCountOfPokemonToLearnMove(string movePageUrl, string moveName)
         {
-            var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl);
+            var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
             return setOfPokemonToLearnMove.Count;
         }
     }
