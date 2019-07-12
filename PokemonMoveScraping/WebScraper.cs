@@ -47,16 +47,24 @@ namespace PokemonMoveScraping
                 "following-sibling::h2[1]/preceding-sibling::table/tr/td[3]");
 
             var setOfPokemonToLearnThisMove = new HashSet<string>();
-            var countOfPokemonToLearnThisMove = 0; 
-            foreach (var pokemonNode in learnTables)
+            var countOfPokemonToLearnThisMove = 0;
+            try
             {
-                if (setOfPokemonToLearnThisMove.Contains(pokemonNode.InnerText))
+                foreach (var pokemonNode in learnTables)
                 {
-                    Console.WriteLine(pokemonNode.InnerText);
-                    continue;
+                    if (setOfPokemonToLearnThisMove.Contains(pokemonNode.InnerText))
+                    {
+                        //Console.WriteLine(pokemonNode.InnerText);
+                        continue;
+                    }
+                    setOfPokemonToLearnThisMove.Add(pokemonNode.InnerText);
+                    countOfPokemonToLearnThisMove++;
                 }
-                setOfPokemonToLearnThisMove.Add(pokemonNode.InnerText);
-                countOfPokemonToLearnThisMove++;
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine(movePageDoc.DocumentNode.SelectSingleNode("/html/head/title").OuterHtml);
+                Console.ReadKey();
             }
             return countOfPokemonToLearnThisMove;
         }
