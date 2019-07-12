@@ -17,6 +17,15 @@ namespace PokemonMoveScraping
             Console.ReadLine();
         }
 
+        static HtmlNodeCollection GetNodeListOfAllMoves()
+        {
+            var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
+            var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
+            var movesTable = mainDoc.DocumentNode.SelectSingleNode("//table//tr//td");
+            var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
+            return nodeListOfMoveNamesAndLinks;
+        }
+
         static int GetTotalCountOfLearnedMoves(HtmlNodeCollection nodeListOfMoveNamesAndLinks)
         {
             var totalMoveCount = 0;
@@ -36,7 +45,7 @@ namespace PokemonMoveScraping
             return totalMoveCount;
         }
 
-        static Dictionary<string, HashSet<string>> 
+        static Dictionary<string, HashSet<string>>
             GetDictOfAllPokemonAndTheirLearnedMoves(HtmlNodeCollection nodeListOfMoveNamesAndLinks)
         {
             var pokemonAndMoves = new Dictionary<string, HashSet<string>>();
@@ -67,15 +76,6 @@ namespace PokemonMoveScraping
             }
 
             return pokemonAndMoves;
-        }
-
-        static HtmlNodeCollection GetNodeListOfAllMoves()
-        {
-            var mainSite = "https://bulbapedia.bulbagarden.net/wiki/List_of_moves";
-            var mainDoc = HtmlDocumentHandler.GetDocumentOrNullIfError(mainSite);
-            var movesTable = mainDoc.DocumentNode.SelectSingleNode("//table//tr//td");
-            var nodeListOfMoveNamesAndLinks = movesTable.SelectNodes(".//tr//td[2]//a");
-            return nodeListOfMoveNamesAndLinks;
         }
 
         static HashSet<string> GetSetOfPokemonToLearnMove(string movePageUrl)
