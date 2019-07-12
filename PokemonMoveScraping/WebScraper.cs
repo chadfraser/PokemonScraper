@@ -10,6 +10,15 @@ namespace PokemonMoveScraping
         static void Main(string[] args)
         {
             var nodeListOfMoveNamesAndLinks = GetNodeListOfAllMoves();
+            var totalMoveCount = GetTotalCountOfLearnedMoves(nodeListOfMoveNamesAndLinks);
+
+            Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
+                $"among all pokemon.");
+            Console.ReadLine();
+        }
+
+        static int GetTotalCountOfLearnedMoves(HtmlNodeCollection nodeListOfMoveNamesAndLinks)
+        {
             var totalMoveCount = 0;
 
             foreach (var moveNode in nodeListOfMoveNamesAndLinks)
@@ -24,9 +33,40 @@ namespace PokemonMoveScraping
                 totalMoveCount += GetCountOfPokemonToLearnMove(movePageUrl);
             }
 
-            Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
-                $"among all pokemon.");
-            Console.ReadLine();
+            return totalMoveCount;
+        }
+
+        static Dictionary<string, HashSet<string>> 
+            GetDictOfAllPokemonAndTheirLearnedMoves(HtmlNodeCollection nodeListOfMoveNamesAndLinks)
+        {
+            var pokemonAndMoves = new Dictionary<string, HashSet<string>>();
+
+            foreach (var moveNode in nodeListOfMoveNamesAndLinks)
+            {
+                var moveHrefAttribute = moveNode.Attributes["href"];
+                if (moveHrefAttribute is null)
+                {
+                    continue;
+                }
+                var movePageUrlSuffix = moveHrefAttribute.Value;
+                var movePageUrl = $"https://bulbapedia.bulbagarden.net{movePageUrlSuffix}";
+                var pokemonMoveSet = GetSetOfPokemonToLearnMove(movePageUrl);
+                var moveName = moveNode.InnerText;
+
+                foreach (var pokemon in pokemonMoveSet)
+                {
+                    if (pokemonAndMoves.ContainsKey(pokemon))
+                    {
+                        pokemonAndMoves[pokemon].Add(moveName);
+                    }
+                    else
+                    {
+                        pokemonAndMoves[pokemon] = new HashSet<string> { moveName };
+                    }
+                }
+            }
+
+            return pokemonAndMoves;
         }
 
         static HtmlNodeCollection GetNodeListOfAllMoves()
