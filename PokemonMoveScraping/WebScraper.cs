@@ -126,7 +126,6 @@ namespace PokemonMoveScraping
                     "those moves are intentionally ignored. Otherwise, you may wish to take note of this.");
                 Console.Error.WriteLine();
                 Console.Error.WriteLine();
-                Console.ReadKey();
             }
 
             return setOfPokemonToLearnMove;
