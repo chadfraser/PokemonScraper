@@ -2,6 +2,7 @@
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace PokemonMoveScraping
@@ -10,21 +11,30 @@ namespace PokemonMoveScraping
     {
         static bool distinguishSubtypes = true;
 
+        const int nationalDexPokemonCount = 807;
+        const int alolaPokemonSubtypeCount = 18;
+        const int totalNumberOfPokemon = nationalDexPokemonCount + alolaPokemonSubtypeCount;
+        static HashSet<string> setOfGeneralTMs;
+        static Dictionary<string, HashSet<string>> dictOfGeneralTMsAndIncompatiblePokemon;
+
         static void Main(string[] args)
         {
+            InitializeSetOfGenericTMs();
             var nodeListOfMoveNamesAndLinks = GetNodeListOfAllMoves();
-            //var totalMoveCount = GetTotalCountOfLearnedMoves(nodeListOfMoveNamesAndLinks);
 
-            //Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
-            //    $"among all pokemon.");
+            var totalMoveCount = GetTotalCountOfLearnedMoves(nodeListOfMoveNamesAndLinks);
+            totalMoveCount += totalNumberOfPokemon;  // Struggle
+            foreach (var move in dictOfGeneralTMsAndIncompatiblePokemon.Keys)
+            {
+                var countThatCannotLearnMove = dictOfGeneralTMsAndIncompatiblePokemon[move].Count;
+                Console.WriteLine($"{move}:  {countThatCannotLearnMove}");
+                totalMoveCount += (totalNumberOfPokemon - countThatCannotLearnMove);
+            }
+
+            Console.WriteLine($"In the main series pokemon game, there are a total of {totalMoveCount} move outcomes " +
+                $"among all pokemon.");
             //Console.WriteLine("Press enter to continue.");
             //Console.ReadLine();
-
-            var a = IncompatibleTM.GetDictOfGeneralTMsAndIncompatiblePokemon();
-            foreach (var b in a.Keys)
-            {
-                Console.WriteLine($"{b}: {string.Join(", ", a[b])}");
-            }
 
             var pokemonMoveDict = GetDictOfAllPokemonAndTheirLearnedMoves(nodeListOfMoveNamesAndLinks);
             //foreach (var pokemon in pokemonMoveDict.Keys)
@@ -35,6 +45,12 @@ namespace PokemonMoveScraping
             //}
             //Console.WriteLine("Press enter to continue.");
             //Console.ReadLine();
+        }
+
+        static void InitializeSetOfGenericTMs()
+        {
+            dictOfGeneralTMsAndIncompatiblePokemon = IncompatibleTM.GetDictOfGeneralTMsAndIncompatiblePokemon();
+            setOfGeneralTMs = dictOfGeneralTMsAndIncompatiblePokemon.Keys.ToHashSet();
         }
 
         static HtmlNodeCollection GetNodeListOfAllMoves()
@@ -99,9 +115,15 @@ namespace PokemonMoveScraping
             return pokemonAndMoves;
         }
 
-        static void GetDistinctPokemonFromTable(HtmlNode tableNode, HashSet<string> setOfPokemonToLearnMove, string moveName)
+        static void GetDistinctPokemonFromTable(HtmlNode tableNode, HashSet<string> setOfPokemonToLearnMove,
+            string moveName)
         {
             var nodesOfPokemonToLearnMove = tableNode.SelectNodes("./tr/td[3]");
+
+            if (setOfGeneralTMs.Contains(moveName))
+            {
+                return;
+            }
 
             if (nodesOfPokemonToLearnMove is null)
             {
@@ -119,7 +141,8 @@ namespace PokemonMoveScraping
                 var pokemonName = pokemonNode.SelectSingleNode(".//a").InnerText.Trim();
                 var pokemonSmallTextNode = pokemonNode.SelectSingleNode(".//small").InnerText.Trim();
 
-                if (!string.IsNullOrEmpty(pokemonSmallTextNode) && distinguishSubtypes)
+                if (!string.IsNullOrEmpty(pokemonSmallTextNode) && (distinguishSubtypes ||
+                    pokemonSmallTextNode == "Alola Form"))
                 {
                     pokemonName = $"{pokemonName} ({pokemonSmallTextNode})";
                 }
@@ -153,7 +176,6 @@ namespace PokemonMoveScraping
             if (tablesOfPokemonToLearnMove is null)
             {
                 Console.WriteLine($"No learnset tables were found for the move '{moveName}'.");
-                Console.ReadLine();
             }
             else
             {
@@ -181,5 +203,16 @@ namespace PokemonMoveScraping
             var setOfPokemonToLearnMove = GetSetOfPokemonToLearnMove(movePageUrl, moveName);
             return setOfPokemonToLearnMove.Count;
         }
+
+        static void AddStruggleToAllMovesets(Dictionary<string, HashSet<string>> dictOfAllPokemonAndLearnedMoves)
+        {
+            foreach (var pokemon in dictOfAllPokemonAndLearnedMoves.Keys)
+            {
+                dictOfAllPokemonAndLearnedMoves[pokemon].Add("Struggle");
+            }
+        }
+
+        // 18 generic Z-moves are ignored, 17 signature Z-moves (of which one can be used by four Pokemon, two can be
+        // used by two pokemon)
     }
 }
